@@ -1,22 +1,59 @@
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Scanner;
+import java.util.Random;
+
 
 public class Main {
     public static void main(String[] args) {
+        int N; //array size
+        int nThread;
+        int[]array;
+        Scanner s = new Scanner(System.in);
         // TODO: Seed your randomizer
+        Random random =new Random(10);
 
         // TODO: Get array size and thread count from user
+        System.out.println("Enter Array Size: ");
+        N= s.nextInt();
+        System.out.println("Enter Thread Count: ");
+        nThread =s.nextInt();
+        array = new int[N];
+
+        s.close();
+        System.out.println(" ");
 
         // TODO: Generate a random array of given size
+        for (int i = 0; i<N; i++){
+            array[i] = i+1;
+        }
+        for (int j = 0; j < N; j++) {
+			int randomIndexToSwap = random.nextInt(array.length);
+			int temp = array[randomIndexToSwap];
+			array[randomIndexToSwap] = array[j];
+			array[j] = temp;
+		}
+        System.out.println(" shuffled Array ");
+        for (int value :array) { 
+            System.out.println(value+" "); 
+        } 
 
         // TODO: Call the generate_intervals method to generate the merge 
         // sequence
 
         // TODO: Call merge on each interval in sequence
 
+        List<Interval> intervals;
+        intervals = generate_intervals(1, N);
+        for (int k =0; k<intervals.size();k++){
+            merge(array,intervals.get(k).getStart()-1,intervals.get(k).getEnd()-1);
+        }
         // Once you get the single-threaded version to work, it's time to 
         // implement the concurrent version. Good luck :)
-
+        System.out.println("Sorted Array ");
+        for (int value :array) { 
+            System.out.println(value+" "); 
+        } 
     }
 
     /*
