@@ -11,7 +11,8 @@ public class Main {
         int[]array;
         Scanner s = new Scanner(System.in);
         // TODO: Seed your randomizer
-        Random random =new Random(10);
+        final int seed = 0; // Make sure the seed is defined as a constant
+        Random random =new Random(seed);
 
         // TODO: Get array size and thread count from user
         System.out.println("Enter Array Size: ");
@@ -33,10 +34,10 @@ public class Main {
 			array[randomIndexToSwap] = array[j];
 			array[j] = temp;
 		}
-        System.out.println(" shuffled Array ");
+        /*System.out.println(" shuffled Array ");
         for (int value :array) { 
             System.out.println(value+" "); 
-        } 
+        } */
 
         // TODO: Call the generate_intervals method to generate the merge 
         // sequence
