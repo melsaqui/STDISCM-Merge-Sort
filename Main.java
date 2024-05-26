@@ -1,141 +1,126 @@
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Scanner;
 import java.util.Random;
-
+import java.util.Scanner;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 public class Main {
+    private static final long SEED = 1234; // Fixed seed for reproducibility
+
     public static void main(String[] args) {
-        int N; //array size
-        int nThread;
-        int[]array;
-        Scanner s = new Scanner(System.in);
-        // TODO: Seed your randomizer
-        final int seed = 0; // Make sure the seed is defined as a constant
-        Random random =new Random(seed);
+        Scanner scanner = new Scanner(System.in);
+        System.out.print("Enter the size of the array (N): ");
+        int n = scanner.nextInt();
+        System.out.print("Enter the number of threads: ");
+        int numThreads = scanner.nextInt();
+        scanner.close();
 
-        // TODO: Get array size and thread count from user
-        System.out.println("Enter Array Size: ");
-        N= s.nextInt();
-        System.out.println("Enter Thread Count: ");
-        nThread =s.nextInt();
-        array = new int[N];
-
-        s.close();
-        System.out.println(" ");
-
-        // TODO: Generate a random array of given size
-        for (int i = 0; i<N; i++){
-            array[i] = i+1;
+        Random random = new Random(SEED);
+        int[] array = new int[n];
+        for (int i = 0; i < n; i++) {
+            array[i] = i + 1;
         }
-        for (int j = 0; j < N; j++) {
-			int randomIndexToSwap = random.nextInt(array.length);
-			int temp = array[randomIndexToSwap];
-			array[randomIndexToSwap] = array[j];
-			array[j] = temp;
-		}
-        /*System.out.println(" shuffled Array ");
-        for (int value :array) { 
-            System.out.println(value+" "); 
-        } */
-
-        // TODO: Call the generate_intervals method to generate the merge 
-        // sequence
-
-        // TODO: Call merge on each interval in sequence
-
-        List<Interval> intervals;
-        intervals = generate_intervals(1, N);
-        for (int k =0; k<intervals.size();k++){
-            merge(array,intervals.get(k).getStart()-1,intervals.get(k).getEnd()-1);
+        // Shuffle array using Fisher-Yates algorithm
+        for (int i = n - 1; i > 0; i--) {
+            int index = random.nextInt(i + 1);
+            int temp = array[index];
+            array[index] = array[i];
+            array[i] = temp;
         }
-        // Once you get the single-threaded version to work, it's time to 
-        // implement the concurrent version. Good luck :)
-        System.out.println("Sorted Array ");
-        for (int value :array) { 
-            System.out.println(value+" "); 
-        } 
+
+        List<Interval> intervals = generate_intervals(0, n - 1);
+
+        long startTime = System.currentTimeMillis();
+
+        if (numThreads > 1) {
+            ExecutorService executor = Executors.newFixedThreadPool(numThreads);
+            for (Interval interval : intervals) {
+                executor.execute(() -> merge(array, interval.getStart(), interval.getEnd()));
+            }
+            executor.shutdown();
+            try {
+                executor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        } else {
+            for (Interval interval : intervals) {
+                merge(array, interval.getStart(), interval.getEnd());
+            }
+        }
+
+        long endTime = System.currentTimeMillis();
+        System.out.println("Time taken: " + (endTime - startTime) + "ms");
+
+        // Verify if array is sorted
+        if (isSorted(array)) {
+            System.out.println("Array is sorted!");
+        } else {
+            System.out.println("Array is NOT sorted!");
+        }
     }
 
-    /*
-    This function generates all the intervals for merge sort iteratively, given 
-    the range of indices to sort. Algorithm runs in O(n).
-
-    Parameters:
-    start : int - start of range
-    end : int - end of range (inclusive)
-
-    Returns a list of Interval objects indicating the ranges for merge sort.
-    */
     public static List<Interval> generate_intervals(int start, int end) {
         List<Interval> frontier = new ArrayList<>();
-        frontier.add(new Interval(start,end));
+        frontier.add(new Interval(start, end));
 
         int i = 0;
-        while(i < frontier.size()){
+        while (i < frontier.size()) {
             int s = frontier.get(i).getStart();
             int e = frontier.get(i).getEnd();
-
             i++;
 
-            // if base case
-            if(s == e){
+            if (s == e) {
                 continue;
             }
 
-            // compute midpoint
             int m = s + (e - s) / 2;
-
-            // add prerequisite intervals
-            frontier.add(new Interval(m + 1,e));
-            frontier.add(new Interval(s,m));
+            frontier.add(new Interval(m + 1, e));
+            frontier.add(new Interval(s, m));
         }
 
         List<Interval> retval = new ArrayList<>();
-        for(i = frontier.size() - 1; i >= 0; i--) {
+        for (i = frontier.size() - 1; i >= 0; i--) {
             retval.add(frontier.get(i));
         }
 
         return retval;
     }
 
-    /*
-    This function performs the merge operation of merge sort.
-
-    Parameters:
-    array : vector<int> - array to sort
-    s     : int         - start index of merge
-    e     : int         - end index (inclusive) of merge
-    */
     public static void merge(int[] array, int s, int e) {
-        int m = s + (e - s) / 2;
-        int[] left = new int[m - s + 1];
-        int[] right = new int[e - m];
-        int l_ptr = 0, r_ptr = 0;
-        for(int i = s; i <= e; i++) {
-            if(i <= m) {
-                left[l_ptr++] = array[i];
-            } else {
-                right[r_ptr++] = array[i];
+        if (s < e) {
+            int m = s + (e - s) / 2;
+            int[] left = new int[m - s + 1];
+            int[] right = new int[e - m];
+            int l_ptr = 0, r_ptr = 0;
+            for (int i = s; i <= e; i++) {
+                if (i <= m) {
+                    left[l_ptr++] = array[i];
+                } else {
+                    right[r_ptr++] = array[i];
+                }
+            }
+            l_ptr = r_ptr = 0;
+            int i = s;
+            while (l_ptr < left.length || r_ptr < right.length) {
+                if (l_ptr < left.length && (r_ptr == right.length || left[l_ptr] <= right[r_ptr])) {
+                    array[i++] = left[l_ptr++];
+                } else if (r_ptr < right.length) {
+                    array[i++] = right[r_ptr++];
+                }
             }
         }
-        l_ptr = r_ptr = 0;
+    }
 
-        for(int i = s; i <= e; i++) {
-            // no more elements on left half
-            if(l_ptr == m - s + 1) {
-                array[i] = right[r_ptr];
-                r_ptr++;
-
-            // no more elements on right half or left element comes first
-            } else if(r_ptr == e - m || left[l_ptr] <= right[r_ptr]) {
-                array[i] = left[l_ptr];
-                l_ptr++;
-            } else {
-                array[i] = right[r_ptr];
-                r_ptr++;
+    public static boolean isSorted(int[] array) {
+        for (int i = 0; i < array.length - 1; i++) {
+            if (array[i] > array[i + 1]) {
+                return false;
             }
         }
+        return true;
     }
 }
 
@@ -152,15 +137,7 @@ class Interval {
         return start;
     }
 
-    public void setStart(int start) {
-        this.start = start;
-    }
-
     public int getEnd() {
         return end;
-    }
-
-    public void setEnd(int end) {
-        this.end = end;
     }
 }
